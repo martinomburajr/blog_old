@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>blog</title>
+        <title>@martinomburajr</title>
         
         <meta name="robots" content="noindex" />
         
@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Chapter 1</a></li><li class="chapter-item expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Chapter 2</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/article.html"><strong aria-hidden="true">1.</strong> Go - Sockets: The Genesis of Golang Connections — Golang net pkg #1</a></li><li class="chapter-item expanded "><a href="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/article.html"><strong aria-hidden="true">2.</strong> How Golang Connections are Made at a Kernel Level — Golang net pkg #2</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -120,7 +120,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">blog</h1>
+                    <h1 class="menu-title">@martinomburajr</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -154,8 +154,258 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#chapter-1" id="chapter-1">Chapter 1</a></h1>
-<h1><a class="header" href="#chapter-2" id="chapter-2">Chapter 2</a></h1>
+                        <p><img src="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/net_package_internals_banner.jpeg" alt="" /></p>
+<p><strong>Author</strong>: Martin Ombura Jr.</p>
+<p><strong>Date</strong>: May 19, 2019</p>
+<h1><a class="header" href="#sockets-the-genesis-of-golang-connections--golang-net-pkg-1" id="sockets-the-genesis-of-golang-connections--golang-net-pkg-1">Sockets: The Genesis of Golang Connections — Golang net pkg #1</a></h1>
+<p>Welcome to the first in a new series that attempts to breakdown the internals of
+the Golang net package. The net package is filled with several networking
+primitives that pair closely with the underlying OS to allow us to build world
+class production networking applications. Renowned projects like Docker,
+Kubernetes, CoreDNS, Traefik are architected in Go and are known for their
+prowess in ability to quickly and efficiently shuffle packets to and from
+various client server services.</p>
+<p>In this article we shall perform a deep dive into the operating system (GOOS)
+and look at Sockets and how they work, and start to piece together a model to
+understand connections and networking. For the sake of demonstration, we shall
+assume we are using a Unix based APIs.</p>
+<h2><a class="header" href="#sockets" id="sockets">Sockets</a></h2>
+<p>Sockets are a pretty old concept first widely introduced in 1983 in the 4.2BSD
+implementation which then overflowed to pretty much every UNIX and other system.
+Sockets are fundamentally a method of inter-process communication (IPC) that
+extend to networked systems. Where other forms of IPC such as pipes and message
+queues are limited to the machine itself, sockets can be opened and connections
+from external sources can attach themselves to an available socket. To really
+understand their role, we look at some of the typical methods used to call the
+socket API, and observe a connection flow from one host to another.</p>
+<h2><a class="header" href="#the-socket-api" id="the-socket-api">The Socket API</a></h2>
+<p>There are about 5 core methods within the Socket API that applications that want
+to network must call. These are <code>socket()</code>, <code>bind()</code>, <code>connect()</code>, <code>listen()</code> and
+<code>accept()</code>. In this article we will look at <code>socket()</code> and <code>bind()</code></p>
+<h3><a class="header" href="#1-socket" id="1-socket">1. Socket</a></h3>
+<p>According to the <a href="https://man7.org/linux/man-pages/man2/socket.2.html">Linux man
+pages</a>,</p>
+<pre><code>The socket() call creates an endpoint for communication and returns a file descriptor that refers to that endpoint.
+</code></pre>
+<p>The creation of a socket is mostly performed by the kernel, so Go applications
+must call this through the use of a syscall implemented in the syscall library.
+Let’s examine the Go code where this syscall happens.</p>
+<pre><code class="language-c">/**
+* Code Snippet 1: Implementations of Socket syscall:
+  Note the signatures shown for Unix and Windows are similar
+  despite being on different GOOS.
+*/
+
+// Unix implementation of socket() system call
+int socket(int domain, int type, int protocol);
+
+// Windows implementation of socket() system call
+SOCKET WSAAPI socket(int af, int type, int protocol);
+</code></pre>
+<p>Let’s take a look at each of the arguments.</p>
+<p><code>domain:</code> The domain refers to the protocol family to be used in the
+communication. this is sometimes referred to as the address family. Examples of
+domains are:</p>
+<p><img src="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/socket_address_family.png" alt="Table 1: A list of Address Families supported by Windows. See more here" />
+<strong>Table 1:</strong> A list of Address Families supported by Windows. See more here</p>
+<p>Unix kernels also have <code>AF_UNIX</code> that performs communication within the kernel
+on the same machine <em>(not used for external networking)</em>.</p>
+<p><code>type:</code> The type represents the type of underlying transport to use. Represented
+as either <code>SOCK_STREAM</code> for reliable, sequenced, connection oriented messages
+(think TCP) as well as <code>SOCK_DGRAM</code> for connection-less, unreliable messages
+(think UDP or UNIX connections).</p>
+<p><code>protocol:</code> Protocol refers to a single protocol that supports the selected
+socket. These are usually in a given protocol family and often this value is
+defaulted to 0.</p>
+<h3><a class="header" href="#2-bind" id="2-bind">2. Bind</a></h3>
+<p>The next Important syscall is to the bind() method. After a socket is created
+using the socket syscall() the socket exists without any address attached to it.
+bind() locates the socket through the use of the file descriptor returned from
+the socket creation, and attaches a network address to it.</p>
+<pre><code class="language-c">/**
+* Code Snippet 2: Implementations of bind() syscall: Note the similar function signatures.
+*/
+
+// Unix implementation of bind() system call
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+
+// Windows implementation of bind() system call
+int WSAAPI bind(
+  SOCKET         s,
+  const sockaddr *name,
+  int            namelen
+);
+</code></pre>
+<p>Bind takes in the following arguments:</p>
+<p><code>sockfd:</code> This represents the file descriptor of the socket returned after creation. Remember in the socket method, the return type is a file descriptor. In order to bind the socket we created, we use the file descriptor as the first argument to the bind method.</p>
+<p><code>socketaddr:</code> Is a pointer to a struct that contains the address that the socket we created can be bound. The address must be “well-known” i.e fixed and resolved before binding. The address should not change after binding, otherwise a new socket will need to be created. DNS resolution should happen first, and we will look at this in an upcoming article.</p>
+<p><code>socklen:</code> Refers to the size of the address struct</p>
+<p>Bind is important as it provides a well-known path to and from the socket. It
+also enables to kernel to broadcasts the whereabouts of the socket so external
+systems can know where to connect. It is possible to omit a call to bind after
+creating a socket, in which case the kernel will select a random available port
+on localhost and bind to it. You may have noticed this when using
+<code>httptest.NewServer()</code> method that does not give the option of specifying an
+address, and lets the kernel handle it. Similarly when using a debugger in an
+IDE e.g. Goland, when the debugger is run, the kernel chooses a port for the
+debugger by either omitting a call to bind therefore returning a different port
+each time. Once the debugger is stopped, the socket is destroyed.</p>
+<h2><a class="header" href="#gos-implementation-of-socket-and-bind" id="gos-implementation-of-socket-and-bind">Go’s Implementation of Socket and Bind</a></h2>
+<p>It’s time to shift our focus back to Go. We have seen the purpose of the
+socket() and bind calls(), but the question remains, where and how are they
+implemented.</p>
+<pre><code class="language-c">/**
+* Code Snippet 2: Implementations of bind() syscall: Note the similar function signatures.
+*/
+
+
+// This unimplemnted function is found in the syscall/syscall_linx_386.go file and is referenced by the socket function below.
+// It is implemented in the syscall/asm_linux_s390x.s file
+func rawsocketcall(call int, a0, a1, a2, a3, a4, a5 uintptr) (n int, err Errno)
+
+// The bind method mirrors the Unix API for bind calls. A call to rawsocketcall is made (see methods above)
+func bind(s int, addr unsafe.Pointer, addrlen _Socklen) (err error) {
+	_, e := socketcall(_BIND, uintptr(s), uintptr(addr), uintptr(addrlen), 0, 0, 0)
+	if e != 0 {
+		err = e
+	}
+	return
+}
+
+// The socket method mirrors the Unix API for Socket calls. A call to rawsocketcall is made (see method above and below)
+func socket(domain int, typ int, proto int) (fd int, err error) {
+	fd, e := rawsocketcall(_SOCKET, uintptr(domain), uintptr(typ), uintptr(proto), 0, 0, 0)
+	if e != 0 {
+		err = e
+	}
+	return
+}
+</code></pre>
+<pre><code class="language-assembly">// func rawsocketcall(call int, a0, a1, a2, a3, a4, a5 uintptr) (n int, err int)
+// Kernel interface gets call sub-number and pointer to a0.
+// This method is found in the syscall/asm_linux_s390x.s file
+TEXT ·rawsocketcall(SB),NOSPLIT,$0-72
+	MOVD	$SYS_SOCKETCALL, R1	// syscall entry
+	MOVD	call+0(FP), R2		// socket call number
+	MOVD	$a0+8(FP), R3		// pointer to call arguments
+	MOVD	$0, R4
+	MOVD	$0, R5
+	MOVD	$0, R6
+	MOVD	$0, R7
+	SYSCALL
+	MOVD	$0xfffffffffffff001, R8
+	CMPUBLT	R2, R8, oksock1
+	MOVD	$-1, n+56(FP)
+	NEG	R2, R2
+	MOVD	R2, err+64(FP)
+	RET
+oksock1:
+	MOVD	R2, n+56(FP)
+	MOVD	$0, err+64(FP)
+	RET
+</code></pre>
+<p>The <code>golang-socket-syscall.go</code> file in <em>Code Snippet 3</em> above showcases the <code>socket()</code>
+method with a signature similar to that of the UNIX <code>socket()</code> API. What is even
+more interesting is that the call to the <code>rawsocketcall()</code> in the <code>socket()</code> refers
+to a function stub that is actually implemented in Assembly. I wrote an article
+detailing the importance of Assembly in Go. The Assembly code appears to perform
+the underlying syscall and passing in relevant arguments received from the Go
+application, to the kernel.</p>
+<p>The implementation of <code>bind()</code> is very similar. It also conforms to the <code>bind()</code> in
+the Unix interface. It also makes a call to rawsocketcall with a _BIND
+parameter. This is just an integer constant that refers to the integer 2, where
+<code>_SOCKET</code> refers to 1. Other syscalls have their own unique constant integer
+identifier.</p>
+<h2><a class="header" href="#a-quick-note-on-file-descriptors" id="a-quick-note-on-file-descriptors">A Quick Note on File Descriptors</a></h2>
+<p>The <code>socket()</code> syscall we saw in <em>Code Snippet 1</em> returns an integer, this integer
+will be extremely important and will lay the foundation for several of the
+following articles. The term File Descriptor should be memorized and not
+forgotten as it will popup quite a bit when we begin creating, reading and
+writing to connections. One thing you can ponder on for now, is why its called a
+“File” descriptor. I answer this in the a future article.</p>
+<p>For now, I think this is a good place to stop as we now have an understanding of sockets and some of the core syscalls that must be performed to create and bind addresses to them. In the next article we look at how socket connections work between client-server services.</p>
+<p><img src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/banner.jpeg" alt="Server and Icon from Freepik | Router Icon from srip" /></p>
+<p><strong>Author</strong>: Martin Ombura Jr.</p>
+<p><strong>Date</strong>: May 19, 2019</p>
+<h1><a class="header" href="#how-golang-connections-are-made-at-a-kernel-level--golang-net-pkg-2" id="how-golang-connections-are-made-at-a-kernel-level--golang-net-pkg-2">How Golang Connections are Made at a Kernel Level — Golang net pkg #2</a></h1>
+<p>In <a href="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/../1-sockets-the-genesis-of-golang-connections-1/article.html">Part 1</a> of this series we introduced the idea of sockets, what they were,
+common syscall APIs to creating and binding addresses to them. In this article
+we introduce the other 3 core socket API methods and we visualize the connection
+process between interconnected systems using the knowledge we gained.</p>
+<h2><a class="header" href="#1-the-connect-listen-and-accept-socket-api-calls" id="1-the-connect-listen-and-accept-socket-api-calls">1. The Connect, Listen and Accept Socket API Calls</a></h2>
+<p>In order to fully visualize how connections are set up, we need to introduce
+three new socket API calls that will be of importance as we continue this
+article series. These are <code>connect()</code>, <code>accept()</code> and <code>listen()</code></p>
+<pre><code class="language-c">// Code Snippet 1: Connect() API Call
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+</code></pre>
+<p>Connect is responsible for connecting a client with a server that is listening. The clients socket is referenced in the first argument sockfd and it connects to the servers bound address specified in the 2nd argument sockaddr. This is different from <code>bind()</code> as we saw in the previous article, that takes a socket and attaches a local address to it making it available from within the machine, whereas <code>connect()</code> has the ability to attach the address to a remote address that may want to use that socket to communicate. In most cases <code>bind()</code> would be used by a server to make its socket known, and <code>connect()</code> would be used by a <code>client()</code> to connect to the server. The 3rd argument is the addrlen that is simply used to specify the size of the addr <em>(2nd argument)</em>. If a <code>connect()</code> fails, it is good practice for the client to close the socket and attempt a new connection with a new socket.</p>
+<h3><a class="header" href="#22-accept" id="22-accept">2.2 Accept</a></h3>
+<pre><code class="language-c">// Code Snippet 2: Accept() API Call
+
+#include &lt;sys/types.h&gt;          /* See NOTES */
+#include &lt;sys/socket.h&gt;
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+</code></pre>
+<p>Accept is used to take an incoming connection on the listening socket indicated
+by its socket file descriptor <code>sockfd</code> , it then creates a new socket and
+returns the new file descriptor for new connections to read/write to. The
+original socket that called <code>listen()</code> always remains open and can be used to
+accept further connections. If there are no other connections, the call blocks
+until new connections arrive.</p>
+<h3><a class="header" href="#23-listen" id="23-listen">2.3 Listen</a></h3>
+<pre><code class="language-c">// Code Snippet 3: Listen() API Call
+
+#include &lt;sys/types.h&gt;          /* See NOTES */
+#include &lt;sys/socket.h&gt;
+
+int listen(int sockfd, int backlog);
+</code></pre>
+<p>Listen takes in the socket file descriptor <code>sockfd</code>, and marks that a socket as a
+passive socket and is ready to accept incoming connections. Passive sockets
+differ from active sockets in that when you create a socket with the <code>socket()</code>
+command as shown in the previous article, these default to being active. This
+active socket (client) can be used in a <code>connect()</code> call to create a connection to
+a passive socket (server). The kernel can proceed to schedule other work as the
+socket waits on a connection. The <code>backlog</code> argument defines a maximum queue
+length of pending connections. If the number is exceeded the client can receive
+a connection refused error.</p>
+<p>Note: <code>listen()</code> cannot be re-applied to a connected socket that had a
+successful <code>connect()</code> call from a client, or a socket returned by a call to
+<code>accept()</code></p>
+<h2><a class="header" href="#3-a-visualization-of-the-connection-process" id="3-a-visualization-of-the-connection-process">3. A Visualization of the Connection Process</a></h2>
+<p>Now that we know the other pieces of the puzzle we can now visualize the
+connection process between client and server. We shall use a connection-oriented
+protocol like TCP <code>(SOCK_STREAM)</code> In <em>Figure 1</em> below we have two entities, a
+client and server. Each entity contains a info-box with the calls its makes in
+order to establish a usable connection-oriented transaction.</p>
+<p><img src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp.png" alt="" /></p>
+<p><strong>Figure 1:</strong> Photo from <a href="https://en.wikipedia.org/wiki/Berkeley_sockets">Bekeley Sockets</a></p>
+<ol>
+<li>Server Socket Creation and Binding: A server starts of by calling <code>socket()</code> to create a socket. This socket acts as an endpoint for communication and returns a file descriptor for the socket.</li>
+<li>Binding the Socket to an address: The server then calls <code>bind()</code> to bind a well-known address which must be supplied to the socket. If not, the socket can not accept connections from any remote host. If <code>bind()</code> is not called, the kernel may apply a random host port to to make the socket available from localhost only.</li>
+<li>Server Calls Listen: The <code>listen()</code> is invoked by the server to allow it to begin accepting connections. It moves the socket from an active to passive state. At this point a client can initiate a connection.</li>
+<li>Client Creates a Socket: A client must create a socket to allow a connection to perform read/write operationson that socket. A SOCK_STREAM socket type enables a bidirectional streaming. When, the client chooses to create the socket is not as important as when the client decides to call <code>connect()</code> to the servers address.</li>
+<li>Server Calls Accept: Once the server calls <code>accept()</code>, the server blocks until there is a connection from a client. In a multi-threaded environment, the thread will block until the server is terminated prematurely or a connection from a client is created.</li>
+<li>Client Calls Connect: The client is free to call <code>connect()</code> at this point, passing in the servers address. The server is available and ready to accept connections as it is in the passive state ready to <code>accept()</code> connections. When the server responds it will use the address of the client that’s stored in a network header (usually IP header). If the client calls <code>connect()</code> before the server calls <code>accept()</code> but after the server calls <code>listen()</code>, the connect would be added to the listeners backlog, if the backlog limit has been reached, the connection will be refused.</li>
+<li>Client Write and Server Read: The client and server can begin to write to to the connection as if writing to a file. This abstraction of reading and writing to a connection as if it were a file is crucial to understanding low-level IO, and it will spring up quite often in subsequent articles. For now it is important to know the client sends a request by writing to the connection, the server reads the written data stream, and responds with another write to the connection. We shall look at the intricacies of reading and writing in a later article, but for now, keep in mind writing to a connection is inherently the same as writing to a file. The term file to the designers of unix tends to have a more abstract meaning than that of the way we use day to day.
+Connection Termination: A connection can be terminated for several reasons,
+either client or server terminating the connection, higher-level timeouts on
+connections being sent, extraneous errors, connections on the <code>listen()</code> backlog
+overflowing etc.</li>
+</ol>
+<p>This back and forth on a connection-oriented protocol may remind you of an image
+you may have seen when learning TCP. That is because I have just described the
+TCP connection flow to you using unix based syscalls, instead of SYN, ACKs etc
+<em>(See Figure 2)</em>.</p>
+<p align="center">
+  <img align="center" src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp_2.gif" alt="TCP Connection Flow taken from IBM">
+</p>
+<p>This is what happens under the hood when Go initiates connection-oriented client-server interactions. In the next article we begin to explore the idea of file descriptors a bit more and how connections have striking similarities to files.</p>
 
                     </main>
 
