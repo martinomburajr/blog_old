@@ -1,4 +1,3 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
-- [Chapter 2](./chapter_2.md)
+- [# Go - Sockets: The Genesis of Golang Connections — Golang net pkg #1](./chapter_1.md)
