@@ -1,0 +1,8 @@
+[book]
+authors = ["martinomburajr"]
+language = "en"
+multilingual = false
+src = "src"
+title = "@martinomburajr"
+
+[rust]
