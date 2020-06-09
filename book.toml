@@ -4,5 +4,16 @@ language = "en"
 multilingual = false
 src = "src"
 title = "@martinomburajr"
+description = "Martin Ombura Jr. Website"
+
+
 
 [rust]
+
+[build]
+build-dir ="public"
+create-missing = true
+
+[output.html]
+google-analytics = "UA-133496300-1"
+

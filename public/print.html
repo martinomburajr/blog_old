@@ -13,7 +13,7 @@
 
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <meta name="description" content="">
+        <meta name="description" content="Martin Ombura Jr. Website">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/article.html"><strong aria-hidden="true">1.</strong> Go - Sockets: The Genesis of Golang Connections — Golang net pkg #1</a></li><li class="chapter-item expanded "><a href="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/article.html"><strong aria-hidden="true">2.</strong> How Golang Connections are Made at a Kernel Level — Golang net pkg #2</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="about/bio.html"><strong aria-hidden="true">1.</strong> About Me</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="about/bio.html"><strong aria-hidden="true">1.1.</strong> Bio</a></li></ol></li><li class="chapter-item expanded "><a href="blog/blog.html"><strong aria-hidden="true">2.</strong> Blog</a></li><li><ol class="section"><li class="chapter-item expanded "><strong aria-hidden="true">2.1.</strong> Go</li><li><ol class="section"><li class="chapter-item expanded "><a href="blog/go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/article.html"><strong aria-hidden="true">2.1.1.</strong> Sockets: The Genesis of Golang Connections</a></li><li class="chapter-item expanded "><a href="blog/go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/article.html"><strong aria-hidden="true">2.1.2.</strong> How Golang Connections are Made at a Kernel Level</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -154,7 +154,40 @@
 
                 <div id="content" class="content">
                     <main>
-                        <p><img src="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/net_package_internals_banner.jpeg" alt="" /></p>
+                        <p><img src="about/me.jpg" alt="Martin Ombura Jr." /></p>
+<h1><a class="header" href="#bio" id="bio">Bio</a></h1>
+<p>Hello there! My name is <strong>Martin Ombura Jr.</strong> A software engineer based in Cape Town, South Africa currently working on 
+<strong>Distributed Systems</strong> and <strong>Evolutionary Computation</strong> in <strong>Go</strong> and <strong>Rust</strong>. </p>
+<p><strong>Email:</strong> me@martinomburajr.com</p>
+<p><img src="about/me.jpg" alt="Martin Ombura Jr." /></p>
+<h1><a class="header" href="#bio-1" id="bio-1">Bio</a></h1>
+<p>Hello there! My name is <strong>Martin Ombura Jr.</strong> A software engineer based in Cape Town, South Africa currently working on 
+<strong>Distributed Systems</strong> and <strong>Evolutionary Computation</strong> in <strong>Go</strong> and <strong>Rust</strong>. </p>
+<p><strong>Email:</strong> me@martinomburajr.com</p>
+<h1><a class="header" href="#vision-for-blog-and-videos" id="vision-for-blog-and-videos">Vision for Blog and Videos</a></h1>
+<p>My goal with the content I aim to put out is to be <strong>interesting</strong>, <strong>problem-facing</strong> and <strong>complete</strong>. </p>
+<h4><a class="header" href="#interesting" id="interesting">Interesting</a></h4>
+<p>Interesting is something subjective. What I tend to find interesting  but through my various years working in Tech, I have narrowed down my current interests to the following:</p>
+<ol>
+<li>Deep Dives (e.g. Internal Workings of Systems)</li>
+<li>Performance</li>
+<li>Distributed Systems Concepts</li>
+</ol>
+<h4><a class="header" href="#problem-facing" id="problem-facing">Problem-Facing</a></h4>
+<p>Solutions to problems are one thing, you can probably find them in StackOverflow or someother Q&amp;A platform. I am more interested in the problems I am interested in. With that being said,
+I may not always find the optimal solution or any solution for that matter, but I want to be able to effectively contend with the problem, outline why the problem is challenging and give insight into some possible solutions. If the result is a good solution, then Hooray!, if not, hopefully you'll come away with deeper insight and appreciation to the problem, and maybe you can be inspired to solve it!</p>
+<h4><a class="header" href="#complete" id="complete">Complete</a></h4>
+<p>I've been writing articles for about 4 years now. I've noticed that there sometimes is a rush to get things out there quickly and succintly which I advocate for. However I am not afraid of having an article be 2000+ words or a video being 3+ hours if it takes that long to complete the task at hand. I will do my best to be concise where I can as much as I can.</p>
+<p>I intend to output 
+Articles or YouTube videos that go from idea conception to completion in their entirety in the best way I know how, including important things like</p>
+<ul>
+<li>Unit Tests,</li>
+<li>GitHub READMEs</li>
+<li>CI/CD or Deployments where necessary. </li>
+</ul>
+<h2><a class="header" href="#website-formatting" id="website-formatting">Website Formatting</a></h2>
+<p>I am using <a href="https://github.com/rust-lang/mdBook"><strong>mdBook</strong></a> to generate the structure of this entire website. Check them out, star them or clone their repo to use it!</p>
+<p><img src="blog/go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/net_package_internals_banner.jpeg" alt="" /></p>
 <p><strong>Author</strong>: Martin Ombura Jr.</p>
 <p><strong>Date</strong>: May 19, 2019</p>
 <h1><a class="header" href="#sockets-the-genesis-of-golang-connections--golang-net-pkg-1" id="sockets-the-genesis-of-golang-connections--golang-net-pkg-1">Sockets: The Genesis of Golang Connections — Golang net pkg #1</a></h1>
@@ -206,7 +239,7 @@ SOCKET WSAAPI socket(int af, int type, int protocol);
 <p><code>domain:</code> The domain refers to the protocol family to be used in the
 communication. this is sometimes referred to as the address family. Examples of
 domains are:</p>
-<p><img src="go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/socket_address_family.png" alt="Table 1: A list of Address Families supported by Windows. See more here" />
+<p><img src="blog/go/net-pkg/1-sockets-the-genesis-of-golang-connections-1/socket_address_family.png" alt="Table 1: A list of Address Families supported by Windows. See more here" />
 <strong>Table 1:</strong> A list of Address Families supported by Windows. See more here</p>
 <p>Unix kernels also have <code>AF_UNIX</code> that performs communication within the kernel
 on the same machine <em>(not used for external networking)</em>.</p>
@@ -324,11 +357,11 @@ forgotten as it will popup quite a bit when we begin creating, reading and
 writing to connections. One thing you can ponder on for now, is why its called a
 “File” descriptor. I answer this in the a future article.</p>
 <p>For now, I think this is a good place to stop as we now have an understanding of sockets and some of the core syscalls that must be performed to create and bind addresses to them. In the next article we look at how socket connections work between client-server services.</p>
-<p><img src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/banner.jpeg" alt="Server and Icon from Freepik | Router Icon from srip" /></p>
+<p><img src="blog/go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/banner.jpeg" alt="Server and Icon from Freepik | Router Icon from srip" /></p>
 <p><strong>Author</strong>: Martin Ombura Jr.</p>
-<p><strong>Date</strong>: May 19, 2019</p>
+<p><strong>Date</strong>: May 21, 2019</p>
 <h1><a class="header" href="#how-golang-connections-are-made-at-a-kernel-level--golang-net-pkg-2" id="how-golang-connections-are-made-at-a-kernel-level--golang-net-pkg-2">How Golang Connections are Made at a Kernel Level — Golang net pkg #2</a></h1>
-<p>In <a href="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/../1-sockets-the-genesis-of-golang-connections-1/article.html">Part 1</a> of this series we introduced the idea of sockets, what they were,
+<p>In <a href="blog/go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/../1-sockets-the-genesis-of-golang-connections-1/article.html">Part 1</a> of this series we introduced the idea of sockets, what they were,
 common syscall APIs to creating and binding addresses to them. In this article
 we introduce the other 3 core socket API methods and we visualize the connection
 process between interconnected systems using the knowledge we gained.</p>
@@ -383,7 +416,7 @@ connection process between client and server. We shall use a connection-oriented
 protocol like TCP <code>(SOCK_STREAM)</code> In <em>Figure 1</em> below we have two entities, a
 client and server. Each entity contains a info-box with the calls its makes in
 order to establish a usable connection-oriented transaction.</p>
-<p><img src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp.png" alt="" /></p>
+<p><img src="blog/go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp.png" alt="" /></p>
 <p><strong>Figure 1:</strong> Photo from <a href="https://en.wikipedia.org/wiki/Berkeley_sockets">Bekeley Sockets</a></p>
 <ol>
 <li>Server Socket Creation and Binding: A server starts of by calling <code>socket()</code> to create a socket. This socket acts as an endpoint for communication and returns a file descriptor for the socket.</li>
@@ -403,7 +436,7 @@ you may have seen when learning TCP. That is because I have just described the
 TCP connection flow to you using unix based syscalls, instead of SYN, ACKs etc
 <em>(See Figure 2)</em>.</p>
 <p align="center">
-  <img align="center" src="go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp_2.gif" alt="TCP Connection Flow taken from IBM">
+  <img align="center" src="blog/go/net-pkg/2-how-golang-connections-are-made-at-a-kernel-level/tcp_2.gif" alt="TCP Connection Flow taken from IBM">
 </p>
 <p>This is what happens under the hood when Go initiates connection-oriented client-server interactions. In the next article we begin to explore the idea of file descriptors a bit more and how connections have striking similarities to files.</p>
 
@@ -430,6 +463,23 @@ TCP connection flow to you using unix based syscalls, instead of SYN, ACKs etc
 
         
 
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-133496300-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
         
 
         
