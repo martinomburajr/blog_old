@@ -243,3 +243,4 @@ Cargo.lock
 
 # End of https://www.toptal.com/developers/gitignore/api/rust,intellij+all,clion+all,intellij+iml,go
 /.idea
+.DS_Store
