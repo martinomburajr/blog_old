@@ -1,0 +1,8 @@
+site_name: Martin Ombura Jr. Blog
+theme:
+  name: material
+markdown_extensions:
+  - codehilite
+  - admonition
+  - toc:
+      permalink: true
