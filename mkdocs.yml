@@ -1,4 +1,6 @@
 site_name: Martin Ombura Jr. Blog
+site_dir: "public"
+
 theme:
   name: material
   features:
