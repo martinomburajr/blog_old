@@ -1,8 +1,22 @@
 site_name: Martin Ombura Jr. Blog
 theme:
   name: material
+  features:
+    - tabs:
 markdown_extensions:
   - codehilite
   - admonition
   - toc:
       permalink: true
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+site_url: "https://martinomburajr.com"
+google_analytics: ['UA-133496300-1', 'martinomburajr.com']
+site_description: "A centralized blog for Martin Ombura Jr. Featuring info on Go, Rust, Distributed Systems etc."
+
+
+# Navigation
+
